@@ -1,6 +1,8 @@
 <%@ page import="com.wso2telco.ids.makerchecker.util.CommonUtil" %>
 <%
 	String loginEndpoint = CommonUtil.constructServerUrl(request) + "/mc-dashboard/api/v1/auth/login";
+
+	String errorMessage = (String)request.getParameter("errorMessage");
 %>
 
 <!DOCTYPE html>
@@ -81,6 +83,8 @@
     </div>
 
     <script type="text/javascript">
+
+
     	$('#main-alert-close').on('click', function () {
   			$("#main-alert").addClass("invisible");
 		});
@@ -114,6 +118,14 @@
     			$("#main-alert").addClass("invisible");
     		}, 5000);
     	}
+
+    	<%
+    		if (errorMessage != null && (!errorMessage.isEmpty())) {
+    			%>
+    				showAlert("<%=errorMessage%>");
+    			<%
+    		}
+    	%>
     </script>
 </body>
 </html>

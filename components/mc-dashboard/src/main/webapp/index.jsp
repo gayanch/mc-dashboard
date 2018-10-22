@@ -4,32 +4,37 @@
 <%@ page import="com.wso2telco.ids.makerchecker.util.CommonUtil" %>
 <%@ page import="com.wso2telco.ids.makerchecker.dto.HumanTaskDto" %>
 <%@ page import="com.wso2telco.ids.makerchecker.exception.HumanTaskException" %>
+<%@ page import="com.wso2telco.ids.makerchecker.util.CommonUtil" %>
 
 <%
     String user = (String)session.getAttribute("username");
     if (user == null || user.isEmpty()) {
-       response.sendRedirect("login.jsp");
+       response.sendRedirect("login.jsp?errorMessage=Please login again to continue.");
        return;
     }
 
     String sessionCookie = (String)session.getAttribute("sessionCookie");
     if (sessionCookie == null || sessionCookie.isEmpty()) {
-        response.sendRedirect("login.jsp");
+        response.sendRedirect("login.jsp?errorMessage=Please login again to continue.");
         return;
     }
+
+    String tasksEndpoint = CommonUtil.constructServerUrl(request) + "/mc-dashboard/api/v1/tasks";
+
+
     String serviceEndpoint = CommonUtil.constructServerUrl(request) + "/services/HumanTaskClientAPIAdmin/";
 
     String taskFilter = request.getParameter("taskFilter");
 
     if (taskFilter == null || taskFilter.isEmpty()) {
-        taskFilter = "ALL";
+        taskFilter = "RESERVED";
     }
 
     List<HumanTaskDto> taskList = null;
     try {
         taskList = HumanTaskUtil.getAllTasks(sessionCookie, taskFilter, serviceEndpoint);
     } catch (HumanTaskException e) {
-        response.sendRedirect("login.jsp");
+        response.sendRedirect("login.jsp?errorMessage=Failed to load task list. Please re-login.");
         return;
     }
 %>
@@ -45,6 +50,9 @@
     </head>
 
     <body>
+
+        <%@include file="includes/task_info_dialogbox.jsp" %>
+
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
           <a class="navbar-brand" href="#">DASHBOARD / HOME</a>
           <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -108,7 +116,7 @@
                                     <td><%=task.getCreatedTime().toString()%></td>
 
                                     <td>
-                                        <div class="dropdown">
+                                        <!-- <div class="dropdown">
                                             <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                 Actions
                                             </button>
@@ -117,7 +125,8 @@
                                                 <a class="dropdown-item" href="#">Reject</a>
                                                 <a class="dropdown-item" href="#">More info</a>
                                             </div>
-                                        </div>
+                                        </div> -->
+                                        <button class="btn btn-info" onClick="showTaskInfo('<%=task.getTaskId()%>')">More Info</button>
                                     </td>
                                 </tr>
                             <% } %>
@@ -133,6 +142,11 @@
 
                 window.location = "index.jsp?taskFilter=" + option;
             });
+
+            function showTaskInfo(taskId) {
+                $("#taskInfoDialoTaskId").val(taskId);
+                $("#taskInfoModal").modal("show");
+            }
         </script>
     </body>
 </html>
