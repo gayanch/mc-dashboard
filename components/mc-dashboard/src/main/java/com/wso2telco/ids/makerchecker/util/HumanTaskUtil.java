@@ -1,6 +1,7 @@
 package com.wso2telco.ids.makerchecker.util;
 
 import com.wso2telco.ids.makerchecker.dto.HumanTaskDto;
+import com.wso2telco.ids.makerchecker.dto.HumanTaskInfoDto;
 import com.wso2telco.ids.makerchecker.exception.HumanTaskException;
 import okhttp3.*;
 import org.apache.axis2.AxisFault;
@@ -13,8 +14,10 @@ import org.oasis_open.docs.ns.bpel4people.ws_humantask.types._200803.TSimpleQuer
 import org.oasis_open.docs.ns.bpel4people.ws_humantask.types._200803.TSimpleQueryInput;
 import org.oasis_open.docs.ns.bpel4people.ws_humantask.types._200803.TTaskSimpleQueryResultRow;
 import org.oasis_open.docs.ns.bpel4people.ws_humantask.types._200803.TTaskSimpleQueryResultSet;
+import org.w3c.dom.Node;
 
 import javax.net.ssl.*;
+import javax.xml.stream.XMLStreamException;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.security.KeyManagementException;
@@ -55,26 +58,15 @@ public class HumanTaskUtil {
                     }
                 }
             }
-
             return taskList;
-        } catch (IllegalStateFault illegalStateFault) {
-            throw new HumanTaskException(illegalStateFault);
-        } catch (NoSuchAlgorithmException e) {
-            throw new HumanTaskException(e);
-        } catch (IllegalArgumentFault illegalArgumentFault) {
-            throw new HumanTaskException(illegalArgumentFault);
-        } catch (AxisFault axisFault) {
-            throw new HumanTaskException(axisFault);
-        } catch (RemoteException e) {
-            throw new HumanTaskException(e);
-        } catch (KeyStoreException e) {
-            throw new HumanTaskException(e);
-        } catch (KeyManagementException e) {
+
+        } catch (IllegalStateFault | NoSuchAlgorithmException | IllegalArgumentFault | RemoteException |
+                KeyStoreException | KeyManagementException e) {
             throw new HumanTaskException(e);
         }
     }
 
-    public static void getTaskInput(String taskId, String sessionCookie, String serviceEndpoint) {
+    public static HumanTaskInfoDto getTaskInput(String taskId, String sessionCookie, String serviceEndpoint) throws HumanTaskException {
         try {
             HumanTaskClientAPIAdminStub stub = initializeHumanTaskStub(sessionCookie, serviceEndpoint);
 
@@ -82,31 +74,15 @@ public class HumanTaskUtil {
             GetInputDocument.GetInput input = GetInputDocument.GetInput.Factory.newInstance();
             input.setIdentifier(taskId);
             document.setGetInput(input);
-
             GetInputResponseDocument responseDocument = stub.getInput(document);
             GetInputResponseDocument.GetInputResponse response = responseDocument.getGetInputResponse();
 
-            System.out.println(response.getTaskData().toString());
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (AxisFault axisFault) {
-            axisFault.printStackTrace();
-        } catch (KeyManagementException e) {
-            e.printStackTrace();
-        } catch (IllegalStateFault illegalStateFault) {
-            illegalStateFault.printStackTrace();
-        } catch (IllegalArgumentFault illegalArgumentFault) {
-            illegalArgumentFault.printStackTrace();
-        } catch (IllegalAccessFault illegalAccessFault) {
-            illegalAccessFault.printStackTrace();
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        } catch (IllegalOperationFault illegalOperationFault) {
-            illegalOperationFault.printStackTrace();
+            HumanTaskInfoDto infoDto = XmlUtil.decodeHumanTaskInfo(response.getTaskData().newReader());
+            return infoDto;
+        } catch (KeyStoreException | NoSuchAlgorithmException | KeyManagementException | IllegalStateFault |
+                IllegalArgumentFault | IllegalAccessFault | RemoteException | IllegalOperationFault | XMLStreamException e) {
+            throw new HumanTaskException(e);
         }
-
     }
 
     public static boolean startTask(String taskId, String sessionCookie, String serviceEndpoint) throws HumanTaskException {
@@ -117,30 +93,14 @@ public class HumanTaskUtil {
             StartDocument.Start start = StartDocument.Start.Factory.newInstance();
             start.setIdentifier(taskId);
             document.setStart(start);
-
             stub.start(document);
 
             return true;
-        } catch (KeyStoreException e) {
-            throw new HumanTaskException(e);
-        } catch (NoSuchAlgorithmException e) {
-            throw new HumanTaskException(e);
-        } catch (AxisFault e) {
-            throw new HumanTaskException(e);
-        } catch (KeyManagementException e) {
-            throw new HumanTaskException(e);
-        } catch (IllegalStateFault e) {
-            throw new HumanTaskException(e);
-        } catch (IllegalArgumentFault e) {
-            throw new HumanTaskException(e);
-        } catch (IllegalAccessFault e) {
-            throw new HumanTaskException(e);
-        } catch (RemoteException e) {
-            throw new HumanTaskException(e);
-        } catch (IllegalOperationFault e) {
+
+        } catch (KeyStoreException | NoSuchAlgorithmException | KeyManagementException | IllegalStateFault |
+                IllegalArgumentFault | IllegalAccessFault | RemoteException | IllegalOperationFault e) {
             throw new HumanTaskException(e);
         }
-
     }
 
     /**
@@ -151,10 +111,10 @@ public class HumanTaskUtil {
      * @return
      * @throws HumanTaskException
      */
-    public static boolean completeTask(String taskId, String sessionCookie, String serviceEndpoint) throws HumanTaskException {
+    public static boolean completeTask(String taskId, String command, String sessionCookie, String serviceEndpoint) throws HumanTaskException {
         //Using manual SOAP request due to an issue in generated code. In generated code CDATA section gets escaped but it should not.
         String taskData = "<![CDATA[<sch:ApprovalCBData xmlns:sch=\"http://ht.bpel.mgt.workflow.identity.carbon.wso2.org/wsdl/schema\">" +
-                    "<approvalStatus>APPROVED</approvalStatus>" +
+                    "<approvalStatus>" + command + "</approvalStatus>" +
                     "</sch:ApprovalCBData>]]>";
 
         String entity = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns=\"http://docs.oasis-open.org/ns/bpel4people/ws-humantask/api/200803\">" +

@@ -20,11 +20,10 @@
     }
 
     String tasksEndpoint = CommonUtil.constructServerUrl(request) + "/mc-dashboard/api/v1/tasks";
-
-
     String serviceEndpoint = CommonUtil.constructServerUrl(request) + "/services/HumanTaskClientAPIAdmin/";
 
     String taskFilter = request.getParameter("taskFilter");
+    String errorMessage = (String)request.getParameter("errorMessage");
 
     if (taskFilter == null || taskFilter.isEmpty()) {
         taskFilter = "RESERVED";
@@ -51,7 +50,7 @@
 
     <body>
 
-        <%@include file="includes/task_info_dialogbox.jsp" %>
+        <%@include file="includes/confirm_dialog.jsp" %>
 
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
           <a class="navbar-brand" href="#">DASHBOARD / HOME</a>
@@ -80,6 +79,14 @@
         <hr/>
 
         <div class="container">
+            <div class="row justify-content-center align-items-center">
+                <div class="alert alert-warning alert-dismissible fade show invisible" role="alert" id="main-alert">
+                  <strong id="message-content"></strong>
+                  <button type="button" class="close" aria-label="Close" id="main-alert-close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+            </div>
             <div class="row">
                 <div class="col">
                     <div class="form-group">
@@ -96,7 +103,7 @@
             </div>
             <div class="row">
                 <div class="col-md-12">
-                    <table class="table table-bordered table-condensed">
+                    <table class="table table-striped table-condensed">
                         <thead>
                             <th>Task Id</th>
                             <th>Subject</th>
@@ -125,11 +132,58 @@
                                                 <a class="dropdown-item" href="#">Reject</a>
                                                 <a class="dropdown-item" href="#">More info</a>
                                             </div>
-                                        </div> -->
-                                        <button class="btn btn-info" onClick="showTaskInfo('<%=task.getTaskId()%>')">More Info</button>
+                                        </div>
+                                        <button class="btn btn-info" onClick="showTaskInfo('<%=task.getTaskId()%>')">More Info</button>-->
+                                        <div id="accordion-<%=task.getTaskId()%>">
+                                          <div class="card">
+                                            <%if (task.getStatus().equals("COMPLETED")) {%>
+                                                <button class="btn btn-link" data-toggle="collapse" data-target="#collapse-<%=task.getTaskId()%>" aria-expanded="true" aria-controls="collapse-<%=task.getTaskId()%>" onClick="fetchTaskData('<%=task.getTaskId()%>')" disabled>
+                                                  Manage Task
+                                                </button> 
+                                            <%} else {%>
+                                                <button class="btn btn-link" data-toggle="collapse" data-target="#collapse-<%=task.getTaskId()%>" aria-expanded="true" aria-controls="collapse-<%=task.getTaskId()%>" onClick="fetchTaskData('<%=task.getTaskId()%>')">
+                                                  Manage Task
+                                                </button> 
+                                            <%}%>                                
+                                          </div>
+                                      </div>
                                     </td>
                                 </tr>
+
+                                <tr>
+                                <td colspan="6">
+                                    <div id="collapse-<%=task.getTaskId()%>" class="collapse" aria-labelledby="headingOne" data-parent="#accordion-<%=task.getTaskId()%>">
+                                      <div class="card-body">
+                                        <p>
+                                            <b>Request ID:</b> 
+                                            <span id="requestId-<%=task.getTaskId()%>"></span>
+                                        </p>
+                                        <p>
+                                            <b>Username:</b> 
+                                            <span id="username-<%=task.getTaskId()%>"></span>
+                                        </p> 
+                                        <p>
+                                            <b>Userstore Domain:</b> 
+                                            <span id="userstore-domain-<%=task.getTaskId()%>"></span>
+                                        </p> 
+                                        <p>
+                                            <b>Roles:</b> 
+                                            <span id="roles-<%=task.getTaskId()%>"></span>
+                                        </p> 
+                                        <p>
+                                            <b>Claims:</b> 
+                                            <span id="claims-<%=task.getTaskId()%>"></span>
+                                        </p> 
+
+                                        <button type="button" class="btn btn-primary" onClick="completeTask('<%=task.getTaskId()%>', 'approve')">Approve</button>
+                                        <button type="button" class="btn btn-danger" onClick="completeTask('<%=task.getTaskId()%>', 'reject')">Reject</button>
+                                        <button type="button" class="btn btn-secondary" onClick="completeTask('<%=task.getTaskId()%>', 'release')">Release</button>
+                                      </div>
+                                    </div>
+                                </td>
+                            </tr>
                             <% } %>
+
                         </tbody>
                     </table>
                 </div>
@@ -137,16 +191,72 @@
         </div>
 
         <script type="text/javascript">
+            $('#main-alert-close').on('click', function () {
+                $("#main-alert").addClass("invisible");
+            });
+
             $("#taskFilterOptions").on("click", e => {
                 let option = $("#taskFilterOptions").val();
 
                 window.location = "index.jsp?taskFilter=" + option;
             });
 
-            function showTaskInfo(taskId) {
-                $("#taskInfoDialoTaskId").val(taskId);
+            function showConfirmDialog(taskId, command) {
+                if (command === 'approve') {
+                    $("#confirmDialogContent").html("Do you want to approve this task?<br>TaskId: " + taskId);
+                } else if (command === 'reject') {
+                    $("#confirmDialogContent").html("Do you want to reject this task?<br>TaskId: " + taskId);  
+                } else if (command === 'release') {
+                    $("#confirmDialogContent").html("Do you want to release this task?<br>TaskId: " + taskId); 
+                }
+
+                $("#confirmDialogTaskId").val(taskId);
+                $("#confirmDialogCommand").val(command);                
                 $("#taskInfoModal").modal("show");
             }
+
+            function completeTask(taskId, command) {
+                showConfirmDialog(taskId, command);
+            }
+
+            function fetchTaskData(taskId) {
+                $.ajax({
+                    url: "<%=tasksEndpoint%>/" + taskId,
+                    method: "get",
+                    success: (response) => {
+                        if (response) {
+                            $("#requestId-" + taskId).html(response.requestId);
+                            $("#username-" + taskId).html(response.username);
+                            $("#userstore-domain-" + taskId).html(response.userStoreDomain);
+                            $("#roles-" + taskId).html(response.roles);
+                            $("#claims-" + taskId).html(response.claims);
+                        } else {
+                            $("#requestId-" + taskId).html("Query Failed");
+                            $("#username-" + taskId).html("Query Failed");
+                            $("#userstore-domain-" + taskId).html("Query Failed");
+                            $("#roles-" + taskId).html("Query Failed");
+                            $("#claims-" + taskId).html("Query Failed");
+                        }
+                    }
+                });
+            }
+
+
+            function showAlert(message) {
+                $("#message-content").html(message);
+                $("#main-alert").removeClass("invisible");
+                setTimeout(function(){
+                    $("#main-alert").addClass("invisible");
+                }, 5000);
+            }
+
+            <%
+                if (errorMessage != null && (!errorMessage.isEmpty())) {
+                    %>
+                    showAlert("<%=errorMessage%>");
+                    <%
+                }
+            %>
         </script>
     </body>
 </html>

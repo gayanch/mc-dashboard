@@ -12,10 +12,10 @@
             <param-name>com.sun.jersey.config.property.packages</param-name>
             <param-value>com.wso2telco.ids.makerchecker.api</param-value>
         </init-param>
-        <init-param>
-            <param-name>com.sun.jersey.spi.container.ContainerResponseFilters</param-name>
-            <param-value>com.wso2telco.ssp.filter.CORSFilter</param-value>
-        </init-param>
+        <!--<init-param>-->
+            <!--<param-name>com.sun.jersey.spi.container.ContainerResponseFilters</param-name>-->
+            <!--<param-value>com.wso2telco.ssp.filter.CORSFilter</param-value>-->
+        <!--</init-param>-->
         <!--<load-on-startup>1</load-on-startup>-->
     </servlet>
 
@@ -24,43 +24,16 @@
         <url-pattern>/api/*</url-pattern>
     </servlet-mapping>
 
-    <!--<servlet-mapping>-->
-        <!--<servlet-name>/</servlet-name>-->
-        <!--<url-pattern>index.jsp</url-pattern>-->
-    <!--</servlet-mapping>-->
+    <servlet-mapping>
+        <servlet-name>HOME</servlet-name>
+        <url-pattern>index.jsp</url-pattern>
+    </servlet-mapping>
 
     <session-config>
         <session-timeout>60</session-timeout>
     </session-config>
 
     <welcome-file-list>
-        <welcome-file>/index.js</welcome-file>
+        <welcome-file>index.js</welcome-file>
     </welcome-file-list>
-
-    <init-param>
-        <description>serverUrl</description>
-        <param-name>serverUrl</param-name>
-        <param-value>https://localhost:9443/services/</param-value>
-    </init-param>
-
-    <!--<init-param>-->
-        <!--<description>userName</description>-->
-        <!--<param-name>userName</param-name>-->
-        <!--<param-value>admin</param-value>-->
-    <!--</init-param>-->
-
-    <!--<init-param>-->
-        <!--<description>password</description>-->
-        <!--<param-name>password</param-name>-->
-        <!--<param-value>admin</param-value>-->
-    <!--</init-param>-->
-    <context-param>
-        <param-name>serviceEndpoint</param-name>
-        <param-value>https://localhost:9443/services/</param-value>
-    </context-param>
-
-    <context-param>
-        <param-name>serverUrl</param-name>
-        <param-value>https://localhost:9443</param-value>
-    </context-param>
 </web-app>
